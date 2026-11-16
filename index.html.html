@@ -1,0 +1,998 @@
+<title>KA Medical Notes Q Bank</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: single-column app shell; teal clinical palette with mint accent; Kufi display + Plex Arabic body */
+:root{
+  --bg:#EEF4F4; --surface:#FFFFFF; --surface-2:#F5F9F9; --ink:#0A1D24; --muted:#44606A; --line:#C2D2D5; color-scheme:light;
+  --brand:#0F5C6E; --brand-2:#17A58A; --on-brand:#FFFFFF; --brand-soft:#DDF0F1;
+  --ok:#0C7A43; --ok-bg:#DDF4E6; --bad:#C1212F; --bad-bg:#FDE2E5; --warn:#8F5A0B; --warn-bg:#FFF2D9;
+  --wm:#5B7279;
+  --f-display:"IBM Plex Sans","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans","IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --f-serif:Georgia,"Times New Roman",serif;
+  --shadow:0 1px 2px rgba(14,42,51,.06),0 8px 24px rgba(14,42,51,.06);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;
+  padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand-2);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding-block:16px 48px}
+
+/* preview switcher */
+.preview{display:flex;gap:6px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:thin}
+.preview span{flex:none;font-size:12px;color:var(--muted);align-self:center;padding-inline-end:6px}
+.preview button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;font-size:13px;cursor:pointer;color:var(--muted)}
+.preview button[aria-current="true"]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+
+.screen[hidden]{display:none!important}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.5;margin:0;text-wrap:balance}
+h1{font-size:30px;font-weight:800}
+h2{font-size:21px;font-weight:800}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.muted{color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* brand header */
+.hero{background:linear-gradient(135deg,var(--brand) 0%,color-mix(in srgb,var(--brand) 55%,var(--brand-2)) 100%);color:var(--on-brand);border-radius:20px;padding:28px 24px;position:relative;overflow:hidden;margin-bottom:16px}
+.hero p{opacity:.88;margin-top:6px}
+.hero .mark{position:absolute;inset-inline-end:-24px;top:-24px;width:150px;height:150px;opacity:.14}
+.tag{display:inline-block;font-size:12px;font-weight:500;letter-spacing:.04em;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 12px;margin-bottom:10px}
+
+/* forms */
+label{font-weight:500;font-size:14px;display:block;margin-bottom:6px}
+input{width:100%;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;min-height:48px}
+input:focus{border-color:var(--brand-2);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-2) 28%,transparent)}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:12px;border:0;background:var(--brand);color:var(--on-brand);font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.block{width:100%}
+.btn.ghost{background:transparent;color:var(--brand);border:1.5px solid var(--line)}
+.btn.small{min-height:38px;padding:0 16px;font-size:14px}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.no{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* pending */
+.pulse{width:64px;height:64px;border-radius:50%;background:var(--warn-bg);display:grid;place-items:center;color:var(--warn);position:relative}
+.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--warn);opacity:.5;animation:ring 2.2s ease-out infinite}
+@keyframes ring{from{transform:scale(1);opacity:.5}to{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pulse::after{animation:none}}
+.notice{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:14px 16px;font-size:15px}
+.rules{display:flex;flex-direction:column;gap:10px;padding:0;margin:0;list-style:none}
+.rules li{display:flex;gap:12px;align-items:flex-start}
+.rules b{flex:none;width:28px;height:28px;border-radius:8px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:14px}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:15px}
+.check input{width:22px;height:22px;min-height:0;flex:none;margin-top:3px;accent-color:var(--brand)}
+
+/* sections */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.who{font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat b{display:block;font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums;color:var(--brand)}
+.stat span{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:start;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s}
+.sec:hover{transform:translateY(-2px);border-color:var(--brand-2)}
+.sec .n{font-family:var(--f-display);font-weight:800;color:var(--brand);font-size:18px}
+.sec .r{font-size:13px;color:var(--muted)}
+.bar{height:7px;background:var(--brand-soft);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand-2));border-radius:99px}
+.sec .p{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* question */
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;font-size:14px}
+.back{background:none;border:0;color:var(--brand);cursor:pointer;font-weight:500;padding:6px 0}
+.stem{font-size:18px;font-weight:500;line-height:1.9;margin:16px 0}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px;cursor:pointer;direction:ltr}
+.opt:hover:not([disabled]){border-color:var(--brand-2)}
+.opt .l{flex:none;width:30px;height:30px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:600;font-size:14px;position:relative;z-index:1}
+.opt .t{flex:1;min-width:0;position:relative;z-index:1}
+.opt .pc{position:relative;z-index:1;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;display:none}
+.opt .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--brand-soft);transition:width .6s ease}
+.opt .flag{position:relative;z-index:1;font-size:12px;font-weight:600;display:none;padding:2px 10px;border-radius:99px}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-bg)}
+.opt.right .fill{background:color-mix(in srgb,var(--ok) 22%,transparent)}
+.opt.right .l{background:var(--ok);color:#fff}
+.opt.right .flag{background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt.wrong .fill{background:color-mix(in srgb,var(--bad) 22%,transparent)}
+.opt.wrong .l{background:var(--bad);color:#fff}
+.opt.wrong .flag{background:var(--bad);color:#fff}
+.answered .opt .pc,.answered .opt .flag.show{display:inline-block}
+@media (prefers-reduced-motion:reduce){.opt .fill{transition:none}}
+.verdict{border-radius:12px;padding:12px 16px;font-weight:600;font-family:var(--f-display);font-size:15px}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)}
+.verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.expl{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.box{border-radius:14px;padding:16px 18px;border:1px solid var(--line);background:var(--surface)}
+.box h3{margin-bottom:6px;color:var(--brand);font-size:15px}
+.box.pearl{background:var(--brand-soft);border-color:transparent}
+.link{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border:1.5px dashed var(--line);border-radius:12px;font-size:14px;color:var(--muted)}
+.sample{font-size:12px;color:var(--muted)}
+
+/* question card, professional treatment */
+.qcard{padding:0;overflow:hidden;position:relative}
+.qcard>*{margin-inline:22px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0!important;padding:14px 22px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.spec{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 10px;background:var(--surface)}
+.qcard .stem{font-family:var(--f-serif);font-size:20px;line-height:1.65;font-weight:400;margin-block:20px 16px;text-align:left}
+.fig{margin-block:0 18px;margin-inline:22px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:12px 12px 8px}
+.fig svg{display:block;width:100%;height:auto;max-height:230px;color:var(--ink)}
+.fig figcaption{font-size:12px;color:var(--muted);text-align:center;padding-top:6px}
+.qcard .opts{margin-bottom:22px}
+.qcard #after{margin-bottom:22px}
+.qcard .box h3,.qcard .lk-h{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.qcard .box p{font-size:15px;line-height:1.75}
+.lk-h{color:var(--muted);margin-bottom:2px}
+.qcard .link{border-style:solid;border-color:var(--line);background:var(--surface-2)}
+.qcard .verdict{font-family:var(--f-body)}
+.fg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.f-brand{stroke:var(--brand)}
+.f-bad{stroke:var(--bad)}
+.f-soft{fill:var(--brand-soft);stroke:var(--brand);stroke-width:1.5}
+.f-txt{fill:currentColor;font-family:var(--f-body);font-size:12px}
+.f-txt-b{fill:var(--brand);font-family:var(--f-body);font-size:12px;font-weight:600}
+.f-txt-r{fill:var(--bad);font-family:var(--f-body);font-size:12px;font-weight:600}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.16) 1.2px,transparent 1.4px);background-size:18px 18px;opacity:.7;pointer-events:none}
+.hero>*{position:relative}
+.hero .mark{position:absolute}
+
+/* watermark */
+#wm{position:fixed;inset:0;pointer-events:none;z-index:5;background-repeat:repeat}
+#wm[hidden]{display:none}
+.noselect{user-select:none;-webkit-user-select:none}
+
+/* admin */
+.req{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.req:first-of-type{border-top:0}
+.req b{font-weight:600}
+.req .meta{font-size:13px;color:var(--muted);direction:ltr;text-align:start;unicode-bidi:plaintext}
+.chip{display:inline-block;font-size:12px;font-weight:600;border-radius:99px;padding:2px 12px}
+.chip.w{background:var(--warn-bg);color:var(--warn)}
+.chip.g{background:var(--ok-bg);color:var(--ok)}
+.chip.r{background:var(--bad-bg);color:var(--bad)}
+.tg{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px}
+@media (max-width:480px){.req{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}h1{font-size:25px}}
+
+/* brand */
+:root{--ink-deep:#082B35;--gold:#C8B07A}
+.hero{background:linear-gradient(165deg,#072A34 0%,#0C4A5A 100%);color:#fff;border-radius:18px;padding:40px 24px 44px;text-align:center;margin-bottom:16px;overflow:hidden;position:relative;border:1px solid rgba(200,176,122,.35)}
+.hero::before{display:none}
+.hero>*{position:relative}
+.hero .ecg{position:absolute;left:0;right:0;bottom:14px;width:100%;height:46px;color:#fff;opacity:.13}
+.mono{width:64px;height:64px;border-radius:50%;margin:0 auto 18px;display:grid;place-items:center;border:1.5px solid var(--gold);color:var(--gold);font-family:var(--f-serif);font-weight:600;font-size:24px;letter-spacing:.06em}
+.hero .kicker{font-size:13px;font-weight:500;letter-spacing:.34em;color:var(--gold);margin:0;opacity:1}
+.hero h1{font-family:var(--f-serif);font-weight:600;font-size:46px;letter-spacing:.2em;margin:6px 0 0;padding-inline-start:.2em;line-height:1.2}
+.hero .rule{width:48px;height:1px;background:var(--gold);margin:16px auto}
+.hero .by{font-family:var(--f-serif);font-style:italic;font-size:16px;opacity:.92;margin:0}
+.hero .ar-sub{font-size:14px;opacity:.7;margin-top:18px}
+.mast{display:flex;align-items:center;gap:12px;padding:6px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.mast[hidden]{display:none}
+.mono.sm{width:38px;height:38px;margin:0;font-size:14px;color:var(--brand);border-color:var(--brand);flex:none}
+.mast-t{display:flex;flex-direction:column;line-height:1.25;direction:ltr}
+.mast-t b{font-size:13px;letter-spacing:.2em;font-weight:600}
+.mast-t i{font-style:normal;font-family:var(--f-serif);font-size:13px;letter-spacing:.3em;color:var(--muted)}
+.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-family:var(--f-serif);font-style:italic;font-size:14px;color:var(--muted);direction:ltr}
+@media (max-width:480px){.hero h1{font-size:36px}}
+.err{color:var(--bad);font-size:13px;margin-top:6px;font-weight:500}
+.err[hidden]{display:none}
+input[aria-invalid="true"]{border-color:var(--bad)}
+.phrow{display:flex;gap:8px}.phrow select{flex:none;width:112px;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:0 8px;min-height:48px;color:var(--ink)}.phrow input{flex:1;min-width:0}
+.phrow .cc{flex:none;display:grid;place-items:center;width:64px;background:var(--brand-soft);color:var(--brand);border-radius:12px;font-weight:600;min-height:48px}
+.saved{font-size:13px;color:var(--ok);font-weight:500}
+.saved[hidden]{display:none}
+.sec .go{font-size:12px;font-weight:600;color:var(--brand)}
+.link-btn{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px;padding:4px 0}
+.tags{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lvl{font-size:12px;font-weight:600;border-radius:6px;padding:2px 10px}
+.lvl.e{background:var(--ok-bg);color:var(--ok)}.lvl.m{background:var(--warn-bg);color:var(--warn)}.lvl.h{background:var(--bad-bg);color:var(--bad)}
+.skiprow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:-8px 22px 22px}
+.skiprow[hidden]{display:none}
+.skip{background:none;border:0;color:var(--muted);font-weight:500;font-size:14px;cursor:pointer;padding:8px 0;margin-inline-start:auto}
+.skip:hover{color:var(--brand)}
+.skipnote{font-size:13px;color:var(--warn)}
+.alert{background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:14px;padding:16px 18px;margin-bottom:16px;font-size:15px}
+.alert[hidden]{display:none}
+.alert-h{font-weight:600;color:var(--warn);margin-bottom:6px}
+.alert p{margin-bottom:10px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.steps li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--line)}
+.slv{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.st{font-size:14px;color:var(--ink)}
+.steps .chip{font-size:11px;white-space:nowrap}
+@media (max-width:480px){.steps li{grid-template-columns:1fr}}
+.seg{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:10px}
+.seg button{flex:1;min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
+.sec.empty{opacity:.55;cursor:default}.sec.empty:hover{transform:none;border-color:var(--line)}
+.hero .tagline{font-family:var(--f-serif);font-size:15px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;margin-top:20px;position:relative}
+
+/* year select */
+select{width:100%;font:inherit;color:inherit;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;min-height:48px}
+select:focus{border-color:var(--brand-2);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-2) 28%,transparent)}
+select[aria-invalid="true"]{border-color:var(--bad)}
+/* bookmarks */
+.bm{display:inline-flex;gap:6px;align-items:center;min-height:28px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:2px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.bm:hover{color:var(--brand);border-color:var(--brand)}
+.bm[aria-pressed="true"]{background:var(--brand-soft);color:var(--brand);border-color:var(--brand)}
+.bm .bmp{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.bm[aria-pressed="true"] .bmp{fill:currentColor}
+.seg button{font-size:14px;padding:0 6px}
+.grid.list{grid-template-columns:1fr}
+.bmitem{display:flex;flex-direction:column;gap:8px;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}
+.bmitem:hover{border-color:var(--brand-2)}
+.bmtop{display:flex;gap:8px;align-items:center;flex-wrap:wrap;direction:ltr}
+.bmst{margin-inline-start:auto;font-size:12px;color:var(--muted);direction:rtl}
+.bmq{font-family:var(--f-serif);font-size:15px;line-height:1.6;color:var(--ink);text-align:left;direction:ltr}
+.emptybm{border:1px dashed var(--line);border-radius:14px;padding:26px 18px;text-align:center;color:var(--muted)}
+.emptybm b{display:block;color:var(--ink);margin-bottom:4px}
+/* admin statistics */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:12px}
+.panel{padding:18px;min-width:0}
+.panel h3{margin-bottom:4px;font-size:15px}
+.psub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.panel>div:last-child{margin-top:10px}
+.hb{display:grid;grid-template-columns:104px 1fr 40px;gap:10px;align-items:center;font-size:13px;margin-block:8px}
+.hb .ht{display:block;height:12px;background:var(--brand-soft);border-radius:6px;overflow:hidden}
+.hb .ht i{display:block;height:100%;background:var(--brand);border-radius:6px}
+.hb.low .ht i{background:var(--bad)}
+.hb .hv{font-variant-numeric:tabular-nums;font-weight:600;text-align:end}
+.cols{display:flex;align-items:flex-end;gap:8px;height:140px}
+.cols .c{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.cols .c i{display:block;width:100%;max-width:30px;background:color-mix(in srgb,var(--brand) 42%,var(--surface));border-radius:4px 4px 0 0}
+.cols .c.now i{background:var(--brand)}
+.cols .c b{font-size:12px;font-variant-numeric:tabular-nums}
+.colx{display:flex;gap:8px;margin-top:6px}
+.colx span{flex:1;min-width:0;text-align:center;font-size:11px;color:var(--muted);direction:ltr}
+.topbm{display:flex;flex-direction:column;gap:10px;list-style:none;margin:0;padding:0}
+.topbm li{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;border-top:1px solid var(--line);padding-top:10px}
+.topbm li:first-child{border-top:0;padding-top:0}
+.topbm .q{direction:ltr;text-align:left;font-size:13px;line-height:1.55}
+.topbm .n{font-weight:600;font-variant-numeric:tabular-nums;color:var(--brand);font-size:13px;white-space:nowrap}
+.req .yr{font-size:13px;color:var(--muted)}
+/* demo mode */
+.demo-only,.demo-banner,.demo-cta{display:none}
+body.demo .demo-only{display:block}
+body.demo .proto-only{display:none!important}
+body.demo .chip.w{display:none}
+body.demo .demo-banner{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--brand-soft);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+body.demo .demo-banner p{font-size:14px;color:var(--muted)}
+body.demo .demo-cta{display:flex;flex-direction:column;gap:10px;align-items:flex-start;margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.demo-note{font-size:12px;color:var(--muted);margin-top:-6px}
+.btn[aria-disabled="true"]{opacity:.55;pointer-events:none}
+a.btn{text-decoration:none}
+
+.lab{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.lab th,.lab td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:start}
+.lab th[scope=row]{font-weight:600;color:var(--ink)}
+.lab td{font-weight:600;color:var(--brand)}.lab td.u{color:var(--muted);font-weight:400}
+.lab thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--line)}
+.lab.tbl td{font-weight:500;color:var(--ink)}
+.flowc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;counter-reset:s}
+.flowc li{counter-increment:s;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px 9px 40px;font-size:14px}
+.flowc li::before{content:counter(s);position:absolute;left:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-size:11px;font-weight:700}
+.flowc li+li{margin-top:14px}.flowc li+li::after{content:"";position:absolute;left:19px;top:-14px;height:14px;border-left:2px solid var(--brand-2)}
+.fig .fav,.bm.fav[aria-pressed="true"]{}
+.bm[hidden],#trBm[hidden]{display:none!important}
+.lrn{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;border:1.5px solid var(--line);border-radius:10px;padding:7px 12px}.lrn:hover{border-color:var(--brand)}
+.cred{display:grid;gap:8px;margin-top:10px}.cred code{display:block;background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:15px;direction:ltr;text-align:left;user-select:all}
+.bm[aria-pressed="true"]{background:#FFF3D1;color:#7A4E00;border-color:#D9A21B}
+.seg{flex-wrap:wrap}.seg button{min-width:30%}
+#retry{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:6px 0}#retry:hover{color:var(--brand)}
+#welcome{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--bg,#0b1b20) 78%,transparent);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px}
+#welcome[hidden]{display:none}
+.wcard{max-width:380px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px 20px;text-align:center;box-shadow:var(--shadow)}
+.wcard svg{width:170px;height:auto;display:block;margin:0 auto 6px}
+.bubble{position:relative;background:var(--brand-soft);color:var(--ink);border-radius:16px;padding:14px 16px;font-weight:700;line-height:1.7;font-size:17px;margin-bottom:14px}
+.bubble::before{content:"";position:absolute;top:-8px;left:50%;margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom-color:var(--brand-soft)}
+.wcard small{display:block;color:var(--muted);margin-bottom:14px;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.wave{transform-origin:150px 190px;animation:wv 1.6s ease-in-out 3}@keyframes wv{0%,100%{transform:rotate(0)}50%{transform:rotate(-14deg)}}}
+.lrn[hidden]{display:none}.opt.right{border-width:2px}.opt.wrong{border-width:2px}
+.notes{margin:4px 22px 16px}.notes label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.notes textarea{width:100%;min-height:74px;resize:vertical;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:15px;line-height:1.55}
+.notes textarea:focus{border-color:var(--brand-2);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-2) 28%,transparent)}
+.lk-a{display:block;font-weight:600;color:var(--brand);text-decoration:underline;text-underline-offset:3px;margin-bottom:6px}.lk-g{font-size:13.5px;color:var(--muted)}
+.qtools{display:flex;gap:8px;flex-wrap:wrap}
+.tool{background:var(--surface);border:1.5px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.tool:hover:not(:disabled){border-color:var(--brand);color:var(--brand)}.tool:disabled{opacity:.4;cursor:default}
+.tool[aria-expanded="true"]{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+.qnav{margin-bottom:12px;padding:14px 14px 12px}
+.qnav[hidden]{display:none}
+.qnav-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:14px}
+.qleg{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.qleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px;max-height:260px;overflow:auto;padding:2px}
+.qn{height:38px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.qn:hover{border-color:var(--brand)}
+.qn.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.qn.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.qn.sk{background:#FFF3D1;border-color:#D9A21B;color:#7A4E00}
+.qn.cur{outline:3px solid var(--brand-2);outline-offset:1px}
+.wkbar{background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:12px;margin-bottom:14px}
+.wkbar>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;list-style:none;font-weight:600;font-size:14.5px;color:var(--warn)}
+.wkbar>summary::-webkit-details-marker{display:none}
+.wkbar .chev{width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .15s}
+.wkbar[open] .chev{transform:rotate(-135deg)}
+.wkbody{padding:2px 14px 14px;border-top:1px solid color-mix(in srgb,var(--warn) 25%,transparent)}
+.wki{padding-top:12px}.wkbar p{margin:8px 14px 10px;font-size:14px}
+#weak .wkbar{margin-bottom:16px}
+.subrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.subrow:last-child{border-bottom:0}.subrow b{display:block}.subrow small{color:var(--muted)}
+.btn.danger,.dng{background:var(--bad);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.dng.armed{background:#7E1018}.dng.restore{background:var(--ok)}
+.subrow.off b{text-decoration:line-through;color:var(--muted)}
+#subq{width:100%;margin:10px 0 6px;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;background:var(--surface-2);color:var(--ink)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;background:#0A1D24;color:#fff;border-radius:12px;padding:12px 18px;max-width:92vw;font-size:14.5px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#toast[hidden]{display:none}
+.loading{padding:18px 22px;color:var(--muted)}
+@media print{body{display:none!important}}
+.qcard,.qcard *{-webkit-touch-callout:none}
+.adm-edit textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;background:var(--surface-2);color:var(--ink);direction:ltr;text-align:left}
+.adm-edit label{margin-top:8px}
+.adm-edit input{direction:ltr}
+.prog{height:8px;background:var(--brand-soft);border-radius:9px;overflow:hidden;margin-top:10px}.prog i{display:block;height:100%;width:0;background:var(--brand)}
+</style>
+
+<div id="app" dir="rtl" lang="ar">
+<div class="wrap">
+
+  
+
+  <header class="mast" id="mast" hidden>
+    <span class="mono sm" aria-hidden="true">KA</span>
+    <span class="mast-t"><b>KA MEDICAL NOTES</b><i>Q BANK</i></span>
+  </header>
+
+  <!-- LOGIN -->
+  <section class="screen" id="s-login">
+    <div class="hero">
+      <svg class="ecg" viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 34H170L182 34L190 40L200 8L210 54L218 34H300Q322 14 344 34H600" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>
+      <div class="mono" aria-hidden="true">KA</div>
+      <p class="kicker">KA MEDICAL NOTES</p>
+      <h1>Q BANK</h1>
+      <div class="rule" aria-hidden="true"></div>
+      <p class="by">Made by Dr. Khaled Abdelsadek</p>
+      <p class="tagline" dir="ltr">Toward Better Practice and Excellence</p>
+    </div>
+    <form class="card stack" id="f-login">
+      <div><label for="u">رقم الموبايل</label><input id="u" inputmode="tel" autocomplete="username" dir="ltr" placeholder="01XXXXXXXXX"></div>
+      <div><label for="pw">كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr" placeholder="••••••••"></div>
+      <button class="btn block" type="submit">دخول</button>
+      <p class="hint">أول مرة؟ كود الدخول بيوصلك على واتساب بعد الدفع.</p><button type="button" class="btn ghost block" data-go="details">أول مرة؟ سجّل بكود الدخول</button>
+    </form>
+  </section>
+
+  <!-- DETAILS -->
+  <section class="screen" id="s-details" hidden>
+    <div class="card stack">
+      <div><h2>أول دخول لك</h2><p class="muted">اكتب اسمك ورقمك وسنتك الدراسية مرة واحدة. بعد الإرسال لا يمكن تعديلهم.</p></div>
+      <form class="stack" id="f-details" novalidate>
+        <div><label for="ac">كود الدخول</label><input id="ac" dir="ltr" autocomplete="off" placeholder="KA-XXXX" aria-describedby="acerr"><p class="err" id="acerr" role="alert" hidden></p></div>
+        <div><label for="nm">الاسم ثلاثي</label><input id="nm" autocomplete="name" placeholder="مثال: أحمد محمود علي" value="أحمد محمود علي" aria-describedby="nmh nmerr"><p class="hint" id="nmh">اكتب اسمك الثلاثي بالكامل. هذا الاسم ورقم موبايلك يظهران كعلامة مائية خفيفة على الأسئلة.</p><p class="err" id="nmerr" role="alert" hidden></p></div>
+        <div><label for="ph">رقم الموبايل (واتساب)</label>
+          <div class="phrow" dir="ltr">
+            <span class="cc" aria-hidden="true">+20</span>
+            <input id="ph" inputmode="tel" dir="ltr" autocomplete="tel-national" placeholder="01XXXXXXXXX" value="01000000000" aria-describedby="pherr">
+          </div>
+          <p class="err" id="pherr" role="alert" hidden></p></div>
+        <div><label for="yr">السنة الدراسية</label><select id="yr" aria-describedby="yrerr"><option value="">اختر سنتك</option><option value="1">السنة الأولى</option><option value="2">السنة الثانية</option><option value="3" selected>السنة الثالثة</option><option value="4">السنة الرابعة</option><option value="5">السنة الخامسة</option><option value="6">السنة السادسة</option><option value="7">امتياز</option><option value="8">خريج</option></select><p class="err" id="yrerr" role="alert" hidden></p></div>
+        <div><label for="pw2">كلمة مرور تختارها</label><input id="pw2" type="password" autocomplete="new-password" dir="ltr" placeholder="6 أحرف على الأقل" aria-describedby="pwerr"><p class="err" id="pwerr" role="alert" hidden></p></div>
+        <button class="btn block" type="submit">إرسال طلب التفعيل</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- PENDING -->
+  <section class="screen" id="s-pending" hidden>
+    <div class="card stack" style="align-items:flex-start">
+      <div class="pulse" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <h2>انتظر رسالة التفعيل في خلال 24 ساعة</h2>
+      <p class="muted">وصل طلبك للمشرف. انتظر رسالة التفعيل في خلال 24 ساعة. أول ما يتم قبولك هتقدر تدخل على الأسئلة، والتفعيل يفضل دائمًا بعد كده.</p>
+      <div class="notice">لو لسه ما دفعتش، حوّل المبلغ على إنستا باي أو محفظة (اتصالات كاش وغيرها) وابعت الإيصال للمشرف على واتساب.</div>
+      <button class="btn ghost" id="refresh">تحديث الحالة</button>
+    </div>
+  </section>
+
+  <!-- TERMS -->
+  <section class="screen" id="s-terms" hidden>
+    <div class="card stack">
+      <span class="chip w" style="align-self:flex-start">تنبيه مهم</span>
+      <h2>الحساب شخصي ولا يجوز مشاركته</h2>
+      <ul class="rules">
+        <li><b>١</b><span>اسمك الثلاثي ورقم موبايلك يظهران بشكل خفيف على كل صفحة.</span></li>
+        <li><b>٢</b><span>الحساب يعمل على جهاز واحد في نفس الوقت. الدخول من جهاز آخر يفصل الأول.</span></li>
+        <li><b>٣</b><span>تصوير الأسئلة أو مشاركتها أو إعادة نشرها يوقف حسابك دون استرداد.</span></li>
+      </ul>
+      <label class="check"><input type="checkbox" id="agree"><span>قرأت التنبيه وأوافق عليه.</span></label>
+      <button class="btn block" id="agreeBtn" disabled>متابعة إلى الأقسام</button>
+    </div>
+  </section>
+
+  <!-- SECTIONS -->
+  <section class="screen" id="s-sections" hidden>
+    <div class="topbar">
+      <div><h2>الأقسام</h2><div class="who" id="who"></div></div>
+      <div class="row"><button class="btn small" id="adminBtn" type="button" hidden>لوحة المشرف</button><button class="btn ghost small" id="logoutBtn" type="button">خروج</button></div>
+    </div>
+    <div class="seg" role="group" aria-label="طريقة العرض"><button type="button" id="trChron" aria-pressed="true">ترتيب القناة</button><button type="button" id="trSpec" aria-pressed="false">حسب التخصص</button><button type="button" id="trBm" aria-pressed="false">★ المفضلة <span id="bmCount"></span></button></div>
+    <p class="sample" id="trNote" style="margin-bottom:14px"></p>
+    <div id="weak"></div>
+    <div class="stats">
+      <div class="stat"><b id="st1">0</b><span>سؤال تم حله</span></div>
+      <div class="stat"><b id="st2">0٪</b><span>نسبة الصح</span></div>
+      <div class="stat"><b id="st3">10</b><span>قسم</span></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- QUESTION -->
+  <section class="screen" id="s-question" dir="ltr" lang="en" hidden>
+    <div class="qhead">
+      <button class="back" data-go="sections">← Sections</button>
+      <div class="qtools"><button class="tool" id="navbtn" type="button" aria-expanded="false" aria-controls="qnav">☰ Questions</button><button class="tool" id="prevq" type="button" aria-label="Previous question">‹ Previous</button></div><span class="muted"><button id="retry" type="button">↺ Retry this section</button> <span id="qpos"></span></span>
+    </div>
+    <div class="card qnav" id="qnav" hidden><div class="qnav-h"><b>Jump to a question</b><span class="qleg"><span><i style="background:#DDF4E6;border:1px solid #0C7A43"></i>Correct</span><span><i style="background:#FDE2E5;border:1px solid #C1212F"></i>Incorrect</span><span><i style="background:#FFF3D1;border:1px solid #D9A21B"></i>Skipped</span><span><i style="background:#fff;border:1px solid #C2D2D5"></i>New</span></span></div><div class="qgrid" id="qgrid"></div></div>
+    <div class="bar" style="margin-bottom:10px"><i id="qbar" style="width:0"></i></div>
+    <div class="card noselect qcard" id="qcard">
+      <div class="meta-row">
+        <span class="eyebrow" id="qsec"></span>
+        <span class="tags"><span class="lvl" id="qlvl"></span><span class="spec" id="qspec"></span><button class="bm" id="bm" type="button" aria-pressed="false" aria-label="Add to favourites"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="bmp" d="M6 3h12v18l-6-4-6 4z"/></svg><span id="bmt">Save</span></button></span>
+      </div>
+      <p class="stem" id="stem"></p>
+      <figure class="fig" id="figwrap">
+        <div id="fig"></div>
+        <figcaption id="figcap"></figcaption>
+      </figure>
+      <div class="opts" id="opts"></div>
+      <div class="notes"><label for="note"><span>My notes</span><span id="notesaved" class="muted"></span></label><textarea id="note" maxlength="2000" placeholder="Write your own notes on this question. They are saved to your account."></textarea></div><div class="skiprow" id="skiprow"><span class="skipnote" id="skipnote" hidden>You skipped this question earlier</span><button class="skip" id="skip" type="button">Skip for now →</button></div>
+      <div id="after" hidden>
+        <div class="expl">
+          <div class="saved" id="saved" hidden>✓ Progress saved to your account</div>
+          <div class="verdict" id="verdict"></div>
+          <p class="demo-note" id="statnote" hidden>Student percentages appear once enough students have answered this question.</p>
+          <div class="alert" id="weakq" hidden></div>
+          <div class="box"><h3>Explanation</h3><p id="why"></p></div>
+          <div class="box pearl"><h3>Clinical Pearl</h3><p id="pearl"></p></div>
+          <div class="link"><div><div class="lk-h">Further reading</div><div id="linkTxt"></div></div><a class="lrn" id="lrn" target="_blank" rel="noopener">Read the lesson on Medscape ↗</a></div>
+          <button class="btn block" id="next">Next question</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section class="screen" id="s-admin" hidden>
+    <div class="topbar"><div><h2>لوحة المشرف</h2><div class="who">الإحصائيات والمشتركون وطلبات التفعيل</div></div><button class="btn ghost small" data-go="sections">رجوع</button></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="panels">
+      <div class="card panel"><h3>المشتركون حسب السنة الدراسية</h3><div id="chYear"></div></div>
+      <div class="card panel"><h3>اشتراكات جديدة في الأسبوع</h3><div class="psub">آخر 8 أسابيع، التاريخ هو أول يوم في الأسبوع</div><div id="chWeek"></div></div>
+      <div class="card panel"><h3>أضعف التخصصات</h3><div class="psub">نسبة الإجابات الصحيحة (تظهر بعد 20 إجابة)، الأحمر أقل من 60٪</div><div id="chWeak"></div></div>
+      <div class="card panel"><h3>الأسئلة الأكثر تفضيلاً</h3><div id="chBm"></div></div>
+    </div>
+    <h3 style="margin-bottom:10px">طلبات التفعيل</h3>
+    <div class="card" style="margin-bottom:16px"><div id="reqs"></div></div>
+    <div class="card panel" style="margin-bottom:16px"><h3>المشتركون</h3><div class="psub">لو مشترك خالف القواعد اضغط "إلغاء الاشتراك". حسابه بيتقفل فوراً وكل جلساته بتنتهي.</div><input id="subq" type="search" placeholder="ابحث بالاسم أو رقم الموبايل" aria-label="بحث في المشتركين"><div id="subs"></div></div>
+    <div class="card panel adm-edit" style="margin-bottom:16px"><h3>تعديل سؤال</h3><div class="psub">اكتب رقم السؤال (مثال s01-001) ثم اضغط تحميل. للسؤال الجديد اكتب رقم جديد.</div>
+      <div class="row"><input id="eqid" dir="ltr" placeholder="s01-001" style="flex:1;min-width:140px"><button class="btn small" id="eqload" type="button">تحميل</button></div>
+      <div id="eqform" hidden>
+        <label>Question</label><textarea id="eq_q"></textarea>
+        <label>Option A</label><input id="eq_o0"><label>Option B</label><input id="eq_o1"><label>Option C</label><input id="eq_o2"><label>Option D</label><input id="eq_o3">
+        <label>Correct option (0=A, 1=B, 2=C, 3=D)</label><input id="eq_c" inputmode="numeric">
+        <label>Explanation</label><textarea id="eq_why"></textarea>
+        <label>Clinical pearl</label><textarea id="eq_pearl"></textarea>
+        <label>Guideline reference</label><input id="eq_link">
+        <label>Lesson link (Medscape)</label><input id="eq_learn">
+        <label>Section number (1-14)</label><input id="eq_sec" inputmode="numeric">
+        <label>Level (e / m / h)</label><input id="eq_lvl">
+        <label>Topic (e.g. Cardiology)</label><input id="eq_topic">
+        <div class="row" style="margin-top:12px"><button class="btn small" id="eqsave" type="button">حفظ</button><span class="muted" id="eqmsg"></span></div>
+      </div>
+    </div>
+    <div class="card panel" style="margin-bottom:16px"><h3>رفع ملف الأسئلة</h3><div class="psub">اختر ملف bank.json اللي بعتهولك. الرفع بيحدّث الأسئلة الموجودة ومش بيمسح تقدم الطلبة.</div>
+      <input type="file" id="impfile" accept=".json,application/json"><div class="prog"><i id="impbar"></i></div><p class="muted" id="impmsg" style="margin-top:6px"></p></div>
+  </section>
+
+<footer class="foot">Made by Dr. Khaled Abdelsadek</footer>
+</div>
+<div id="welcome" hidden role="dialog" aria-modal="true" aria-label="ترحيب"><div class="wcard"><svg viewBox="0 0 300 300" role="img" aria-label="Friendly cartoon doctor waving hello"><ellipse cx="150" cy="289" rx="86" ry="7" fill="#0E2A33" opacity=".08"/><path d="M72 290C72 222 104 192 150 192S228 222 228 290Z" fill="#fff" stroke="#0F5C6E" stroke-width="4"/><path d="M150 196L124 236L150 290L176 236Z" fill="#DDF0F1" stroke="#0F5C6E" stroke-width="3"/><path d="M112 198C102 238 124 262 150 262S198 238 188 198" fill="none" stroke="#2B3A40" stroke-width="5.5" stroke-linecap="round"/><circle cx="150" cy="268" r="9" fill="#17A58A" stroke="#2B3A40" stroke-width="3"/><rect x="176" y="246" width="34" height="22" rx="4" fill="#fff" stroke="#0F5C6E" stroke-width="2.5"/><path d="M182 254H204M182 260H196" stroke="#0F5C6E" stroke-width="2.5" stroke-linecap="round"/><rect x="136" y="170" width="28" height="28" rx="8" fill="#E9B98F"/><ellipse cx="150" cy="118" rx="56" ry="62" fill="#F2C9A5" stroke="#0F5C6E" stroke-width="4"/><path d="M94 112C92 66 118 52 152 52S210 68 206 112C198 92 184 84 164 82C140 90 114 90 94 112Z" fill="#2B3A40"/><g fill="none" stroke="#2B3A40" stroke-width="3.5"><circle cx="126" cy="124" r="15"/><circle cx="174" cy="124" r="15"/><path d="M141 124H159"/></g><circle cx="126" cy="124" r="5.5" fill="#2B3A40"/><circle cx="174" cy="124" r="5.5" fill="#2B3A40"/><circle cx="128" cy="122" r="1.8" fill="#fff"/><circle cx="176" cy="122" r="1.8" fill="#fff"/><path d="M130 152Q150 170 170 152" fill="none" stroke="#2B3A40" stroke-width="5" stroke-linecap="round"/><circle cx="106" cy="146" r="7" fill="#F29B8E" opacity=".5"/><circle cx="194" cy="146" r="7" fill="#F29B8E" opacity=".5"/><g class="wave"><path d="M222 232C252 222 264 192 260 164" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round"/><path d="M222 232C252 222 264 192 260 164" fill="none" stroke="#0F5C6E" stroke-width="4" stroke-linecap="round" opacity=".3"/><circle cx="260" cy="152" r="16" fill="#F2C9A5" stroke="#0F5C6E" stroke-width="3.5"/></g></svg><div class="bubble" dir="rtl">مرحبا في بنك أسئلة<br><span dir="ltr">Ka Medical Notes Q bank</span></div><small dir="rtl">Toward Better Practice and Excellence</small><button class="btn block" id="welcomeGo" type="button">يلا نبدأ</button></div></div><div id="wm" hidden aria-hidden="true"></div><div id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script>
+(function(){
+  var API='https://lyigtarredgjquojlgzb.supabase.co/functions/v1/api',TOK="",ME=null,CRED=null;
+  var userName="", regDate="", userPhone="";
+  var screens=["login","details","pending","terms","sections","question","admin"];
+  var wmOn={terms:1,sections:1,question:1,admin:1};
+  var current="login";
+  function go(id){
+    current=id;
+    screens.forEach(function(s){document.getElementById("s-"+s).hidden=(s!==id)});
+    document.getElementById("wm").hidden=!wmOn[id];
+    document.getElementById("mast").hidden=(id==="login");
+    if(id==="question")renderQ();
+    if(id==="admin")loadAdmin();
+    if(id==="sections"){renderSections();if(typeof showWelcome==="function")showWelcome()}
+    window.scrollTo(0,0);
+  }
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("[data-go]"); if(t){go(t.dataset.go)}
+  });
+
+  // watermark
+  function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+  var wmEl=document.getElementById("wm");
+  function buildWm(){
+    var txt=esc(userName+" · "+userPhone);
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" width="300" height="190"><text x="150" y="95" text-anchor="middle" transform="rotate(-24 150 95)" font-family="Tahoma,Arial,sans-serif" font-size="15" fill="#6d868c" fill-opacity="0.11">'+txt+'</text></svg>';
+    wmEl.style.backgroundImage='url("data:image/svg+xml;utf8,'+encodeURIComponent(svg)+'")';
+  }
+  // deters casual removal: if the layer is deleted or restyled, put it back
+  function guardWm(){
+    var app=document.getElementById("app");
+    if(!app.contains(wmEl)){app.appendChild(wmEl)}
+    if(wmEl.hidden!==!wmOn[current]){wmEl.hidden=!wmOn[current]}
+    var cs=getComputedStyle(wmEl);
+    if(!wmEl.hidden&&(cs.display==="none"||cs.visibility==="hidden"||parseFloat(cs.opacity)<1)){
+      wmEl.removeAttribute("style");buildWm();
+    }
+  }
+  setInterval(guardWm,1500);
+  buildWm();
+
+  function digits(v){return v.replace(/[٠-٩]/g,function(d){return "٠١٢٣٤٥٦٧٨٩".indexOf(d)}).replace(/\s|-/g,"")}
+  function setErr(inp,box,msg){box.hidden=!msg;box.textContent=msg||"";inp.setAttribute("aria-invalid",msg?"true":"false")}
+  document.getElementById("f-details").addEventListener("submit",function(e){
+    e.preventDefault();
+    var nmI=document.getElementById("nm"),phI=document.getElementById("ph");
+    var n=nmI.value.trim().replace(/\s+/g," "),ph=digits(phI.value).replace(/^\+/,"");
+    var parts=n.split(" ").filter(function(w){return w.length>=2});
+    var okN=parts.length>=3, okP, msgP="اكتب رقم موبايل مصري صحيح من 11 رقم يبدأ بـ 01.";
+    if(/^20\d{10}$/.test(ph)){ph=ph.slice(2)} else if(/^0020\d{10}$/.test(ph)){ph=ph.slice(4)}
+    ph=ph.replace(/^0/,"");okP=/^1[0125]\d{8}$/.test(ph);
+    setErr(nmI,document.getElementById("nmerr"),okN?"":"اكتب الاسم ثلاثي على الأقل (الاسم واسم الأب واسم الجد).");
+    setErr(phI,document.getElementById("pherr"),okP?"":msgP);
+    var yrI=document.getElementById("yr"),okY=!!yrI.value;
+    setErr(yrI,document.getElementById("yrerr"),okY?"":"اختر السنة الدراسية.");
+    var okC=!!document.getElementById("ac").value.trim(),okW=document.getElementById("pw2").value.length>=6;
+    setErr(document.getElementById("ac"),document.getElementById("acerr"),okC?"":"اكتب كود الدخول اللي وصلك على واتساب.");
+    setErr(document.getElementById("pw2"),document.getElementById("pwerr"),okW?"":"كلمة المرور 6 أحرف على الأقل.");
+    if(!okN||!okP||!okY||!okC||!okW)return;
+    var pw2=document.getElementById("pw2").value;
+    api("register",{code:document.getElementById("ac").value.trim(),name:n,phone:"0"+ph,year:yrI.value,password:pw2}).then(function(j){
+      if(j.ok){CRED={phone:"0"+ph,pw:pw2};go("pending");return}
+      if(j.error==="bad_code")setErr(document.getElementById("ac"),document.getElementById("acerr"),ERR.bad_code);
+      else showErr(j);
+    }).catch(showErr);
+  });
+  var ag=document.getElementById("agree"),agb=document.getElementById("agreeBtn");
+  ag.addEventListener("change",function(){agb.disabled=!ag.checked});
+  agb.addEventListener("click",function(){try{localStorage.setItem("ka-terms-"+userPhone,"1")}catch(e){}go("sections")});
+
+  // saved progress (demo uses this browser; the real app saves to the student's account on the server)
+  // one record per question id, so progress is shared by both tracks. Value: option index = answered, -1 = skipped
+  function loadP(){return PM}
+  function saveP(o){PM=o}
+  var NSEC=14,bmMode=false,track="chron",curList=[],curLabel="",qi=0,answered=false,L=["A","B","C","D"];
+  var LV={e:"Easy",m:"Medium",h:"Hard"},LVO={e:0,m:1,h:2};
+  var SPECS=[{k:"Emergency",ar:"الطوارئ",en:"Emergency"},{k:"Cardiology",ar:"القلب",en:"Cardiology"},{k:"Chest",ar:"الصدرية",en:"Chest"},{k:"Neurology",ar:"المخ والأعصاب",en:"Neurology"},{k:"Endocrinology",ar:"الغدد والسكر",en:"Endocrinology"},{k:"GI",ar:"الجهاز الهضمي والكبد",en:"GI & Liver"},{k:"Nephrology",ar:"الكلى",en:"Nephrology"},{k:"Hematology",ar:"أمراض الدم",en:"Hematology"},{k:"Oncology",ar:"الأورام",en:"Oncology"},{k:"Infectious",ar:"الأمراض المعدية",en:"Infectious Disease"},{k:"Rheumatology",ar:"الروماتيزم",en:"Rheumatology"},{k:"Critical Care",ar:"الرعاية المركزة",en:"Critical Care"},{k:"Surgery",ar:"الجراحة",en:"Surgery"},{k:"Urology",ar:"المسالك البولية",en:"Urology"},{k:"Pharmacology",ar:"الأدوية",en:"Pharmacology"},{k:"OBGYN",ar:"النساء والتوليد",en:"OB/GYN"},{k:"Other",ar:"تخصصات أخرى",en:"Other specialties"}];
+  document.getElementById("qcard").addEventListener("contextmenu",function(e){e.preventDefault()});
+  document.getElementById("qcard").addEventListener("copy",function(e){e.preventDefault()});
+  var grid=document.getElementById("grid");
+  function toast(m,ms){var t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},ms||3500)}
+  function api(action,body){
+    body=body||{};body.action=action;if(TOK)body.token=TOK;
+    return fetch(API,{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(body)})
+      .then(function(r){return r.json()},function(){throw {error:"network"}})
+      .then(function(j){
+        if(!j.ok&&{session_replaced:1,auth:1,not_active:1,locked:1}[j.error]&&TOK){kicked(j);throw j}
+        return j});
+  }
+  function kicked(j){
+    TOK="";try{sessionStorage.removeItem("ka-tok")}catch(e){}
+    var m=j.error==="locked"?"تم إيقاف حسابك مؤقتاً بسبب نشاط غير طبيعي. تواصل مع المشرف.":(j.error==="not_active"?"اشتراكك غير مفعّل حالياً. تواصل مع المشرف.":"تم تسجيل الدخول بحساب آخر من جهاز مختلف، فتم إنهاء هذه الجلسة.");
+    resetState();go("login");toast(m,7000);
+  }
+  function resetState(){PM={};CORR={};FAV={};NM={};Q.length=0;for(var k in QMAP)delete QMAP[k];ME=null}
+  var PM={},CORR={},FAV={},NM={};
+  function loadMeta(meta){
+    Q.length=0;for(var k in QMAP)delete QMAP[k];
+    meta.forEach(function(m){var q={id:m[0],sec:m[1],msg:m[2],lvl:m[3],topic:m[4],spec:m[5],grp:m[6]};Q.push(q);QMAP[q.id]=q});
+  }
+  function applyBoot(j){
+    ME=j.user;userName=ME.name;userPhone=ME.phone;buildWm();
+    document.getElementById("who").textContent=userName+" · "+userPhone;
+    loadMeta(j.meta);PM={};CORR={};
+    Object.keys(j.progress).forEach(function(id){var v=j.progress[id];if(v===-1)PM[id]=-1;else{PM[id]=v.c;CORR[id]=!!v.ok}});
+    FAV={};j.favs.forEach(function(id){FAV[id]=1});Object.keys(j.favq||{}).forEach(function(id){if(QMAP[id])QMAP[id].stem=j.favq[id]});NM=j.notes||{};
+    document.getElementById("adminBtn").hidden=!ME.admin;
+  }
+  var ERR={bad_code:"كود الدخول غير صحيح.",bad_name:"اكتب الاسم ثلاثي على الأقل.",bad_phone:"رقم الموبايل غير صحيح.",bad_year:"اختر السنة الدراسية.",bad_password:"كلمة المرور 6 أحرف على الأقل.",phone_exists:"الرقم ده مسجّل قبل كده. ادخل من صفحة الدخول.",rate_limited:"محاولات كتير. استنى شوية وحاول تاني.",bad_login:"رقم الموبايل أو كلمة المرور غير صحيحة.",network:"مفيش اتصال بالسيرفر. اتأكد من النت وحاول تاني.",server_error:"حصل خطأ في السيرفر. حاول بعد شوية."};
+  function showErr(j){toast(ERR[j&&j.error]||"حصل خطأ. حاول تاني.",5000)}
+  function afterLogin(j){
+    TOK=j.token;try{sessionStorage.setItem("ka-tok",TOK)}catch(e){}
+    return api("bootstrap").then(function(b){
+      applyBoot(b);
+      var seen=false;try{seen=localStorage.getItem("ka-terms-"+userPhone)==="1"}catch(e){}
+      go(seen?"sections":"terms");
+    });
+  }
+  function doLogin(phone,pw,fromPending){
+    return api("login",{phone:phone,password:pw}).then(function(j){
+      if(j.status==="active")return afterLogin(j);
+      CRED={phone:phone,pw:pw};
+      if(j.status==="pending"){go("pending");return}
+      if(j.status==="locked"){toast("تم إيقاف حسابك. تواصل مع المشرف.",6000);return}
+      if(j.status==="rejected"||j.status==="revoked"){toast("الاشتراك غير مفعّل. تواصل مع المشرف.",6000);return}
+      showErr(j);
+    }).catch(showErr);
+  }
+  document.getElementById("f-login").addEventListener("submit",function(e){e.preventDefault();
+    var p=document.getElementById("u").value,w=document.getElementById("pw").value;if(!p||!w){toast("اكتب رقم الموبايل وكلمة المرور.");return}
+    doLogin(p,w)});
+  document.getElementById("refresh").addEventListener("click",function(){
+    if(!CRED){go("login");return}
+    api("login",{phone:CRED.phone,password:CRED.pw}).then(function(j){
+      if(j.status==="active")return afterLogin(j);
+      toast(j.status==="pending"?"لسه الطلب تحت المراجعة. هتوصلك رسالة التفعيل في خلال 24 ساعة.":"الاشتراك غير مفعّل. تواصل مع المشرف.",5000);
+    }).catch(showErr)});
+  document.getElementById("logoutBtn").addEventListener("click",function(){
+    var t=TOK;if(t)api("logout").catch(function(){});TOK="";try{sessionStorage.removeItem("ka-tok")}catch(e){}resetState();go("login")});
+  document.getElementById("adminBtn").addEventListener("click",function(){go("admin")});
+
+  // bookmarks (stored apart from answers; in the real app they live on the student's account)
+  function loadB(){return FAV}
+  function saveB(o){FAV=o}
+  function bmIds(){var B=loadB();return Object.keys(B).filter(function(id){return B[id]&&QMAP[id]}).map(function(id){return QMAP[id]}).sort(byLevel).map(function(q){return q.id})}
+  function updBmCount(){var n=bmIds().length;document.getElementById("bmCount").textContent=n?"("+n+")":""}
+  function syncBm(){var on=!!loadB()[curList[qi]];document.getElementById("bm").setAttribute("aria-pressed",String(on));document.getElementById("bmt").textContent="Favourite"}
+  document.getElementById("bm").addEventListener("click",function(){var B=loadB(),id=curList[qi],on;if(B[id]){delete B[id];on=false}else{B[id]=Date.now();on=true}saveB(B);syncBm();updBmCount();api("fav",{id:id,on:on}).catch(function(){})});
+  function bmHTML(P){
+    var ids=bmIds();
+    if(!ids.length)return '<div class="emptybm"><b>لسه مفيش أسئلة مفضلة</b>اضغط على ★ Favourite في أي سؤال علشان تلاقيه هنا.</div>';
+    return ids.map(function(id){
+      var q=QMAP[id],st=P[id]===undefined?"لم يُحل":(P[id]<0?"متخطّى":(CORR[id]?"إجابة صحيحة":"إجابة خاطئة"));
+      return '<button class="bmitem" type="button" data-bm="'+id+'"><span class="bmtop"><span class="lvl '+q.lvl+'">'+LV[q.lvl]+'</span><span class="spec">'+q.topic+'</span><span class="bmst">'+st+'</span></span><span class="bmq">'+esc(q.q||q.stem||"")+'</span></button>';
+    }).join("");
+  }
+
+  // questions (inside every section they run Easy, then Medium, then Hard)
+  var FIG1='<svg viewBox="0 0 520 212" role="img" aria-label="Metformin mechanism of action"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>'+
+    '<rect x="200" y="6" width="120" height="30" rx="15" class="f-soft"/><text x="260" y="26" text-anchor="middle" class="f-txt-b">Metformin</text>'+
+    '<g class="fg" stroke-width="1.6"><path d="M240 36L90 80" marker-end="url(#ah)"/><path d="M260 36V80" marker-end="url(#ah)"/><path d="M280 36L430 80" marker-end="url(#ah)"/></g>'+
+    '<g><rect x="15" y="82" width="150" height="58" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/><text x="90" y="105" text-anchor="middle" class="f-txt-b">Liver</text><text x="90" y="125" text-anchor="middle" class="f-txt">↓ Gluconeogenesis</text>'+
+    '<rect x="185" y="82" width="150" height="58" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/><text x="260" y="105" text-anchor="middle" class="f-txt-b">Muscle &amp; fat</text><text x="260" y="125" text-anchor="middle" class="f-txt">↑ Glucose uptake</text>'+
+    '<rect x="355" y="82" width="150" height="58" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/><text x="430" y="105" text-anchor="middle" class="f-txt-b">Gut</text><text x="430" y="125" text-anchor="middle" class="f-txt">↑ GLP-1, ↓ absorption</text></g>'+
+    '<g class="fg" stroke-width="1.6"><path d="M90 140L190 172" marker-end="url(#ah)"/><path d="M260 140V170" marker-end="url(#ah)"/><path d="M430 140L330 172" marker-end="url(#ah)"/></g>'+
+    '<rect x="110" y="174" width="300" height="32" rx="16" class="f-soft"/><text x="260" y="195" text-anchor="middle" class="f-txt-b">↓ Plasma glucose, low hypoglycemia risk</text></svg>';
+  var FIG2='<svg viewBox="0 0 520 190" role="img" aria-label="ECG comparison: normal T wave versus peaked T wave">'+
+    '<g stroke="currentColor" stroke-opacity=".12" stroke-width="1"><path d="M20 60H300M20 150H300"/></g>'+
+    '<path class="fg f-brand" d="M20 60H50Q62 44 74 60H96L102 66L110 18L118 76L124 60H160Q190 28 220 60H300"/>'+
+    '<text x="316" y="56" class="f-txt-b">Normal K⁺</text><text x="316" y="74" class="f-txt">Low, broad, rounded T wave</text>'+
+    '<path class="fg" d="M20 150H50Q62 134 74 150H96L102 156L110 108L118 166L124 150H150"/>'+
+    '<path class="fg f-bad" d="M150 150L172 96L194 150"/>'+
+    '<path class="fg" d="M194 150H300"/>'+
+    '<circle cx="172" cy="96" r="4" fill="var(--bad)"/>'+
+    '<text x="316" y="146" class="f-txt-r">Hyperkalemia</text><text x="316" y="164" class="f-txt">Tall, narrow, peaked T wave</text></svg>';
+  var FIG3='<svg viewBox="0 0 520 190" role="img" aria-label="Schematic chest showing right lower lobe consolidation">'+
+    '<defs><clipPath id="rlclip"><path d="M205 60C150 55 110 100 105 160C102 195 130 212 175 208C200 206 215 195 215 175L215 70Z"/></clipPath></defs>'+
+    '<g transform="translate(130 0) scale(.8)">'+
+    '<path class="fg" d="M260 8V68M260 68L215 95M260 68L305 95"/>'+
+    '<path d="M205 60C150 55 110 100 105 160C102 195 130 212 175 208C200 206 215 195 215 175L215 70Z" fill="var(--surface)" stroke="currentColor" stroke-width="2.4"/>'+
+    '<g clip-path="url(#rlclip)"><rect x="90" y="150" width="140" height="70" fill="var(--bad)" fill-opacity=".38"/></g>'+
+    '<path d="M205 60C150 55 110 100 105 160C102 195 130 212 175 208C200 206 215 195 215 175L215 70Z" fill="none" stroke="currentColor" stroke-width="2.4"/>'+
+    '<path d="M103 150H216" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>'+
+    '<path d="M315 60C370 55 410 100 415 160C418 195 390 212 345 208C320 206 305 195 305 175L305 70Z" fill="var(--surface)" stroke="currentColor" stroke-width="2.4"/>'+
+    '</g>'+
+    '<path class="fg f-bad" stroke-width="1.5" d="M128 148H246"/><circle cx="246" cy="148" r="3.5" fill="var(--bad)"/>'+
+    '<text x="10" y="142" class="f-txt-r">Lobar consolidation</text><text x="10" y="160" class="f-txt">Right lower lobe</text>'+
+    '</svg>';
+  var Q=[];
+
+  // graded study path shown when a topic needs work
+  var RESX={"Emergency": {"nice": {"title": "NICE NG51 Suspected sepsis: recognition, diagnosis and early management", "url": "https://www.nice.org.uk/guidance/ng51"}, "book": {"title": "WHO-ICRC Basic Emergency Care: approach to the acutely ill and injured", "url": "https://wkc.who.int/resources/publications/i/item/basic-emergency-care-approach-to-the-acutely-ill-and-injured"}, "overview": {"title": "Cleveland Clinic Emergency Medicine", "url": "https://my.clevelandclinic.org/departments/emergency"}}, "Cardiology": {"nice": {"title": "NICE Cardiovascular conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/cardiovascular-conditions"}, "book": {"title": "WHO HEARTS technical package: risk-based CVD management", "url": "https://www.who.int/publications/i/item/9789240001367"}, "overview": {"title": "Cleveland Clinic Cardiovascular Medicine", "url": "https://my.clevelandclinic.org/departments/heart/depts/cardiovascular-medicine"}}, "Chest": {"nice": {"title": "NICE Respiratory conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/respiratory-conditions"}, "book": {"title": "GOLD 2026 Report and Pocket Guide (COPD)", "url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/"}, "overview": {"title": "Cleveland Clinic Respiratory Institute", "url": "https://my.clevelandclinic.org/departments/respiratory"}}, "Neurology": {"nice": {"title": "NICE Neurological conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/neurological-conditions"}, "book": {"title": "Neuroscience Online (open-access textbook, UTHealth)", "url": "https://nba.uth.tmc.edu/neuroscience/"}, "overview": {"title": "Cleveland Clinic General Neurology", "url": "https://my.clevelandclinic.org/departments/neurological/depts/general-neurology"}}, "Endocrinology": {"nice": {"title": "NICE Diabetes and other endocrinal, nutritional and metabolic conditions", "url": "https://nice.org.uk/guidance/conditions-and-diseases/diabetes-and-other-endocrinal-nutritional-and-metabolic-conditions"}, "book": {"title": "Endotext (free online endocrinology textbook)", "url": "https://www.endotext.org"}, "overview": {"title": "Cleveland Clinic Endocrinology & Metabolism Institute", "url": "https://my.clevelandclinic.org/departments/endocrinology-metabolism"}}, "GI": {"nice": {"title": "NICE Digestive tract conditions", "url": "https://www.nice.org.uk/guidance/Conditions-and-diseases/Digestive-tract-conditions"}, "book": {"title": "World Gastroenterology Organisation Global Guidelines", "url": "https://www.worldgastroenterology.org/guidelines"}, "overview": {"title": "Cleveland Clinic General Gastroenterology", "url": "https://my.clevelandclinic.org/departments/digestive/depts/general-gastroenterology"}}, "Nephrology": {"nice": {"title": "NICE Kidney conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/kidney-conditions"}, "book": {"title": "KDIGO 2024 CKD Guideline (PDF)", "url": "https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf"}, "overview": {"title": "Cleveland Clinic Glickman Urological & Kidney Institute", "url": "https://my.clevelandclinic.org/departments/urology-kidney"}}, "Hematology": {"nice": {"title": "NICE Blood and immune system conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/blood-and-immune-system-conditions"}, "book": {"title": "A Laboratory Guide to Clinical Hematology (open textbook, CC BY-NC)", "url": "https://open.umn.edu/opentextbooks/textbooks/a-laboratory-guide-to-clinical-hematology"}, "overview": {"title": "Cleveland Clinic Hematology & Medical Oncology", "url": "https://my.clevelandclinic.org/departments/cancer/depts/hematology-medical-oncology"}}, "Oncology": {"nice": {"title": "NICE Cancer", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/cancer"}, "book": {"title": "NCI PDQ Cancer Information Summaries for Clinicians", "url": "https://www.cancer.gov/publications/pdq/information-summaries"}, "overview": {"title": "Cleveland Clinic Cancer Institute", "url": "https://my.clevelandclinic.org/departments/cancer"}}, "Infectious": {"nice": {"title": "NICE Infections", "url": "https://nice.org.uk/guidance/conditions-and-diseases/infections"}, "book": {"title": "CDC Yellow Book (Infectious Diseases Related to Travel)", "url": "https://www.cdc.gov/yellow-book/hcp/contents/index.html"}, "overview": {"title": "Cleveland Clinic Infectious Disease", "url": "https://my.clevelandclinic.org/departments/respiratory/depts/infectious-disease"}}, "Rheumatology": {"nice": {"title": "NICE Musculoskeletal conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/musculoskeletal-conditions"}, "book": {"title": "Skills in Rheumatology (Springer open access)", "url": "https://link.springer.com/book/10.1007/978-981-15-8323-0"}, "overview": {"title": "Cleveland Clinic General Rheumatology", "url": "https://my.clevelandclinic.org/departments/orthopaedics-rheumatology/depts/rheumatology"}}, "Critical Care": {"nice": {"title": "NICE CG83 Rehabilitation after critical illness in adults", "url": "https://www.nice.org.uk/guidance/CG83"}, "book": {"title": "Surviving Sepsis Campaign 2026 Adult Guidelines", "url": "https://www.sccm.org/clinical-resources/guidelines/guidelines/surviving-sepsis-campaign-international-guidelines-for-management-of-sepsis-and-septic-shock-2026"}, "overview": {"title": "Cleveland Clinic Critical Care Medicine", "url": "https://my.clevelandclinic.org/departments/respiratory/depts/critical-care-medicine"}}, "Surgery": {"nice": {"title": "NICE NG180 Perioperative care in adults", "url": "https://www.nice.org.uk/guidance/NG180"}, "book": {"title": "WHO Surgical care at the district hospital", "url": "https://www.who.int/publications/i/item/9241545755"}, "overview": {"title": "Cleveland Clinic Trauma and Acute Care Surgery", "url": "https://my.clevelandclinic.org/departments/digestive/depts/acute-care-surgery"}}, "Urology": {"nice": {"title": "NICE Urological conditions", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/urological-conditions"}, "book": {"title": "EAU Guidelines (European Association of Urology)", "url": "https://uroweb.org/guidelines"}, "overview": {"title": "Cleveland Clinic Glickman Urological & Kidney Institute", "url": "https://my.clevelandclinic.org/departments/urology-kidney"}}, "Pharmacology": {"nice": {"title": "NICE NG5 Medicines optimisation", "url": "https://www.nice.org.uk/guidance/ng5/resources"}, "book": {"title": "WHO Model List of Essential Medicines, 23rd list (2023)", "url": "https://www.who.int/publications/i/item/WHO-MHP-HPS-EML-2023.02"}, "overview": null}, "OBGYN": {"nice": {"title": "NICE Fertility, pregnancy and childbirth", "url": "https://www.nice.org.uk/guidance/conditions-and-diseases/fertility-pregnancy-and-childbirth"}, "book": {"title": "WHO Managing complications in pregnancy and childbirth, 2nd ed.", "url": "https://www.who.int/publications/i/item/9789241565493"}, "overview": {"title": "Cleveland Clinic Obstetrics & Gynecology Institute", "url": "https://my.clevelandclinic.org/departments/obgyn-womens-health"}}, "Other": {"nice": {"title": "NICE NG56 Multimorbidity: clinical assessment and management", "url": "https://www.nice.org.uk/Guidance/ng56/resources"}, "book": {"title": "WHO PEN: essential noncommunicable disease interventions for primary health care", "url": "https://www.who.int/publications/i/item/9789240009226"}, "overview": null}};
+  var RES={Cardiology0:[
+    {lv:"Level 1 · Foundations",t:"ECG basics: rate, rhythm, axis and the normal waveform"},
+    {lv:"Level 2 · Core patterns",t:"Recognizing MI territories, pericarditis and common arrhythmias on ECG"},
+    {lv:"Level 3 · Guideline management",t:"ACS and arrhythmia management algorithms (ACC/AHA guidelines)"}]};
+  function steps(topic){return RES[topic]||[
+    {lv:"Level 1 · Foundations",t:"Core concepts of "+topic},
+    {lv:"Level 2 · Core patterns",t:"Common presentations and diagnosis in "+topic},
+    {lv:"Level 3 · Guideline management",t:"Guideline-based management in "+topic}]}
+  var QMAP={};Q.forEach(function(q){QMAP[q.id]=q});
+  function byLevel(a,b){return LVO[a.lvl]-LVO[b.lvl]||a.msg-b.msg}
+  function idsOf(list){return list.sort(byLevel).map(function(q){return q.id})}
+  // Both tracks list the same questions. Inside every section they run Easy, then Medium, then Hard.
+  function sections(){
+    var out=[],i;
+    if(track==="chron"){
+      for(i=1;i<=NSEC;i++){
+        (function(i){var l=Q.filter(function(q){return q.sec===i});
+          out.push({key:"c"+i,title:"القسم "+i,sub:l.length+" سؤال",label:"Section "+i,ids:idsOf(l)});})(i);
+      }
+    }else{
+      SPECS.forEach(function(sp){var l=Q.filter(function(q){return q.grp===sp.k});out.push({key:"t"+sp.k,title:sp.ar,sub:sp.en+" · "+l.length+" سؤال",label:sp.en,ids:idsOf(l)})});
+    }
+    return out;
+  }
+  function weakTopics(){
+    var P=loadP(),t={};
+    Object.keys(P).forEach(function(id){
+      var v=P[id],q=QMAP[id]; if(v<0||!q)return;
+      var o=t[q.topic]=t[q.topic]||{n:0,w:0}; o.n++; if(!CORR[id])o.w++;
+    });
+    var out=[];Object.keys(t).forEach(function(k){var o=t[k];if(o.n>=3&&o.w/o.n>=0.5)out.push({topic:k,n:o.n,w:o.w})});
+    return out;
+  }
+  function stepsHTML(topic){
+    var r=RESX[topic]||RESX.Other||{},a=function(o,t){return o&&o.url?'<a class="chip w" href="'+o.url+'" target="_blank" rel="noopener">'+t+' ↗</a>':''};
+    var L=[["Level 1 · Foundations","Start with a plain-language overview of "+topic,a(r.overview,"Overview")],["Level 2 · Core knowledge","Read the free textbook chapters on "+topic+(r.book?" ("+r.book.title+")":""),a(r.book,"Free book")],["Level 3 · Guideline management","Revise the current NICE guidance on "+topic+(r.nice?" ("+r.nice.title+")":""),a(r.nice,"NICE")]];
+    return '<ol class="steps">'+L.map(function(s){return '<li><span class="slv">'+s[0]+'</span><span class="st">'+s[1]+'</span>'+s[2]+'</li>'}).join("")+'</ol>';
+  }
+  function renderSections(){
+    var P=loadP(),html="",tot=0,right=0;
+    Object.keys(P).forEach(function(id){var q=QMAP[id];if(q&&P[id]>=0){tot++;if(CORR[id])right++}});
+    var lst=(track==="bm"),secs=lst?[]:sections();
+    if(lst)html=bmHTML(P);
+    secs.forEach(function(sc){
+      var cnt=0,sk=0;sc.ids.forEach(function(id){if(P[id]===undefined)return;if(P[id]<0)sk++;else cnt++});
+      var n=sc.ids.length,pct=n?Math.round(cnt/n*100):0;
+      if(!n){html+='<button class="sec empty" type="button" disabled><span class="n">'+sc.title+'</span><span class="r">'+sc.sub+'</span><div class="bar"><i style="width:0"></i></div><div class="p"><span>غير متاح في المعاينة</span></div></button>';return}
+      html+='<button class="sec" type="button" data-key="'+sc.key+'"><span class="n">'+sc.title+'</span><span class="r">'+sc.sub+'</span>'+
+        '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="p"><span>'+cnt+' / '+n+(sk?' · '+sk+' متخطّى':'')+'</span><span class="go">'+((cnt||sk)?"متابعة":"ابدأ")+'</span></div></button>';
+    });
+    grid.innerHTML=html;
+    document.getElementById("st1").textContent=tot;
+    document.getElementById("st2").textContent=tot?Math.round(right/tot*100)+"٪":"٠٪";
+    document.getElementById("st3").textContent=(lst?NSEC:secs.length);
+    document.getElementById("trChron").setAttribute("aria-pressed",String(track==="chron"));
+    document.getElementById("trSpec").setAttribute("aria-pressed",String(track==="spec"));
+    document.getElementById("trBm").setAttribute("aria-pressed",String(track==="bm"));
+    grid.className=lst?"grid list":"grid";
+    updBmCount();
+    document.getElementById("trNote").textContent=track==="chron"?"أقسام بترتيب القناة من الأقدم للأحدث، والأسئلة جواه من الأسهل للأصعب.":(track==="spec"?"كل تخصص قسم مستقل، والأسئلة جواه من الأسهل للأصعب.":"أسئلتك المفضلة، متاحة في أي وقت.");
+    var wk=weakTopics(),wh="";
+    if(wk.length){wh='<details class="wkbar"><summary><span>⚠ تنبيه: '+wk.length+' '+(wk.length>1?'تخصصات':'تخصص')+' محتاجة مراجعة، اضغط للتفاصيل</span><span class="chev" aria-hidden="true"></span></summary><div class="wkbody">';wk.forEach(function(w){wh+='<div class="wki"><div class="alert-h">بتغلط كتير في <span dir="ltr">'+w.topic+'</span> ('+w.w+' من '+w.n+')</div><div dir="ltr">'+stepsHTML(w.topic)+'</div></div>'});wh+='</div></details>'}
+    document.getElementById("weak").innerHTML=wh;
+  }
+  function entryIdx(){
+    var P=loadP(),k;
+    for(k=0;k<curList.length;k++)if(P[curList[k]]===undefined)return k;
+    for(k=0;k<curList.length;k++)if(P[curList[k]]===-1)return k;
+    return 0;
+  }
+  function nextIdx(){
+    if(bmMode)return (qi+1<curList.length)?qi+1:-1;
+    var P=loadP(),k,n=curList.length;
+    for(k=qi+1;k<n;k++)if(P[curList[k]]===undefined)return k;
+    for(k=0;k<qi;k++)if(P[curList[k]]===undefined)return k;
+    for(k=qi+1;k<n;k++)if(P[curList[k]]===-1)return k;
+    for(k=0;k<qi;k++)if(P[curList[k]]===-1)return k;
+    return -1;
+  }
+  grid.addEventListener("click",function(e){
+    var b=e.target.closest("[data-key]"); if(!b)return;
+    var sc=sections().filter(function(x){return x.key===b.dataset.key})[0]; if(!sc||!sc.ids.length)return;
+    bmMode=false;curList=sc.ids;curLabel=sc.label;qi=entryIdx();go("question");
+  });
+  document.getElementById("trChron").addEventListener("click",function(){track="chron";renderSections()});
+  document.getElementById("trSpec").addEventListener("click",function(){track="spec";renderSections()});
+  document.getElementById("trBm").addEventListener("click",function(){track="bm";renderSections()});
+  grid.addEventListener("click",function(e){
+    var b=e.target.closest("[data-bm]"); if(!b)return;
+    bmMode=true;curList=bmIds();curLabel="Favourite questions";qi=Math.max(0,curList.indexOf(b.dataset.bm));go("question");
+  });
+
+  function renderQ(){
+    if(!curList.length){var s0=sections().filter(function(x){return x.ids.length})[0];if(!s0)return;curList=s0.ids;curLabel=s0.label;qi=0}
+    var id0=curList[qi],q0=QMAP[id0];
+    if(q0.o){renderQ0();return}
+    var st=document.getElementById("stem");st.textContent="Loading question…";document.getElementById("opts").innerHTML="";
+    document.getElementById("after").hidden=true;document.getElementById("skiprow").hidden=true;document.getElementById("figwrap").hidden=true;
+    document.getElementById("qpos").textContent="Question "+(qi+1)+" of "+curList.length;
+    api("question",{id:id0}).then(function(j){
+      if(!j.ok){showErr(j);return}
+      q0.q=j.q.q;q0.o=j.q.o;q0.fig=j.q.fig||"";q0.cap=j.q.cap||"";
+      if(curList[qi]===id0)renderQ0();
+    }).catch(function(e){if(!e||!e.session)showErr(e)});
+  }
+  function renderQ0(){
+    if(!curList.length){var sc=sections().filter(function(x){return x.ids.length})[0];curList=sc.ids;curLabel=sc.label;qi=0}
+    var q=QMAP[curList[qi]],P=loadP(),cnt=0; answered=false;
+    curList.forEach(function(id){if(P[id]>=0)cnt++});
+    document.getElementById("qpos").textContent="Question "+(qi+1)+" of "+curList.length;
+    document.getElementById("qbar").style.width=Math.round(cnt/curList.length*100)+"%";
+    document.getElementById("qsec").textContent=curLabel;
+    var lv=document.getElementById("qlvl");lv.textContent=LV[q.lvl];lv.className="lvl "+q.lvl;
+    document.getElementById("qspec").textContent=q.spec;
+    syncBm();syncNote();
+    document.getElementById("stem").textContent=q.q;
+    document.getElementById("figwrap").hidden=!q.fig;
+    document.getElementById("fig").innerHTML=q.fig||"";
+    document.getElementById("figcap").textContent=q.cap;
+    var box=document.getElementById("opts"); box.classList.remove("answered"); box.innerHTML="";
+    q.o.forEach(function(txt,i){
+      var b=document.createElement("button");
+      b.className="opt"; b.type="button"; b.id="opt"+i;
+      b.innerHTML='<span class="l">'+L[i]+'</span><span class="t"></span><span class="flag"></span><span class="pc"></span><span class="fill"></span>';
+      b.querySelector(".t").textContent=txt;
+      b.addEventListener("click",function(){pick(i)});
+      box.appendChild(b);
+    });
+    document.getElementById("after").hidden=true;
+    document.getElementById("weakq").hidden=true;
+    document.getElementById("skiprow").hidden=false;
+    document.getElementById("skipnote").hidden=(P[q.id]!==-1);
+    if(P[q.id]!==undefined&&P[q.id]>=0)pick(P[q.id],true);
+    buildNav();
+  }
+
+  function buildNav(){
+    var P=loadP(),h="";
+    curList.forEach(function(id,i){var s=P[id],c="qn";
+      if(s===-1)c+=" sk";else if(s!==undefined)c+=CORR[id]?" ok":" bad";
+      if(i===qi)c+=" cur";
+      h+='<button type="button" class="'+c+'" data-i="'+i+'" aria-label="Question '+(i+1)+'"'+(i===qi?' aria-current="true"':'')+'>'+(i+1)+'</button>';
+    });
+    document.getElementById("qgrid").innerHTML=h;
+    document.getElementById("prevq").disabled=(qi<=0);
+    var cur=document.querySelector("#qgrid .cur");if(cur&&!document.getElementById("qnav").hidden&&cur.scrollIntoView)cur.scrollIntoView({block:"nearest"});
+  }
+  document.getElementById("navbtn").addEventListener("click",function(){var n=document.getElementById("qnav");n.hidden=!n.hidden;this.setAttribute("aria-expanded",String(!n.hidden));if(!n.hidden)buildNav()});
+  document.getElementById("qgrid").addEventListener("click",function(e){var b=e.target.closest("[data-i]");if(!b)return;qi=+b.dataset.i;document.getElementById("qnav").hidden=true;document.getElementById("navbtn").setAttribute("aria-expanded","false");renderQ();window.scrollTo(0,0)});
+  document.getElementById("prevq").addEventListener("click",function(){if(qi>0){qi--;renderQ();window.scrollTo(0,0)}});
+  function pick(i,restore){
+    if(answered)return; answered=true;
+    var id=curList[qi],q=QMAP[id],box=document.getElementById("opts");
+    box.classList.add("answered");
+    document.getElementById("skiprow").hidden=true;
+    for(var k=0;k<4;k++)document.getElementById("opt"+k).disabled=true;
+    (restore?api("review",{id:id}):api("answer",{id:id,choice:i})).then(function(r){
+      if(!r.ok){answered=false;box.classList.remove("answered");for(var k=0;k<4;k++)document.getElementById("opt"+k).disabled=false;document.getElementById("skiprow").hidden=false;showErr(r);return}
+      if(curList[qi]!==id)return;
+      var d=r.d;if(!restore){var P=loadP();P[id]=i;saveP(P)}CORR[id]=!!r.correct;
+      var pct=r.stats&&r.stats.pct;
+      q.o.forEach(function(_,k){
+        var el=document.getElementById("opt"+k);
+        if(pct){el.querySelector(".pc").textContent=pct[k]+"%";el.querySelector(".fill").style.width=pct[k]+"%"}
+        else{el.querySelector(".pc").style.display="none"}
+        var f=el.querySelector(".flag");
+        if(k===d.c){el.classList.add("right");f.textContent="Correct";f.classList.add("show")}
+        else if(k===i){el.classList.add("wrong");f.textContent="Incorrect";f.classList.add("show")}
+      });
+      var v=document.getElementById("verdict"),ok=!!r.correct;
+      v.className="verdict "+(ok?"ok":"bad");
+      v.textContent=ok?("Correct."+(pct?" "+pct[d.c]+"% of students chose this answer.":"")):"Incorrect. The correct answer is "+L[d.c]+".";
+      document.getElementById("statnote").hidden=!!pct;
+      document.getElementById("why").textContent=d.why||"";
+      document.getElementById("pearl").textContent=d.pearl||"";
+      (function(){var el=document.getElementById("linkTxt");el.textContent="";
+        if(d.lu){var a=document.createElement("a");a.href=d.lu;a.target="_blank";a.rel="noopener noreferrer";a.className="lk-a";a.textContent=(d.ls||"Medscape")+": "+(d.lt||"Read the full lesson")+" ↗";el.appendChild(a)}
+        if(d.link){var dd=document.createElement("div");dd.className="lk-g";dd.textContent="Guideline: "+d.link;el.appendChild(dd)}})();
+      var la=document.getElementById("lrn");la.hidden=!d.learn;if(d.learn){la.href=d.learn;la.textContent="Read the lesson on "+(d.ls||"Medscape")+" ↗"}
+      var wk=weakTopics().filter(function(w){return w.topic===q.topic})[0],wq=document.getElementById("weakq");
+      if(wk){wq.innerHTML='<details class="wkbar"><summary><span>⚠ Heads up: you are missing many '+wk.topic+' questions</span><span class="chev" aria-hidden="true"></span></summary><p>You have missed '+wk.w+' of '+wk.n+'. Build up gradually with these steps:</p><div class="wkbody">'+stepsHTML(wk.topic)+'</div></details>';wq.hidden=false}
+      else wq.hidden=true;
+      document.getElementById("saved").hidden=false;
+      document.getElementById("next").textContent=(nextIdx()<0)?"Back to sections":"Next question";
+      document.getElementById("after").hidden=false;buildNav();
+      if(!restore)document.getElementById("after").scrollIntoView({behavior:"smooth",block:"nearest"});
+    }).catch(function(e){
+      answered=false;box.classList.remove("answered");for(var k=0;k<4;k++){var el=document.getElementById("opt"+k);if(el)el.disabled=false}
+      document.getElementById("skiprow").hidden=false;if(!e||e.error==="network")showErr(e)});
+  }
+  function goNext(){
+    var k=nextIdx();
+    if(k<0){go("sections")}else{qi=k;renderQ();window.scrollTo(0,0)}
+  }
+  document.getElementById("next").addEventListener("click",goNext);
+  document.getElementById("skip").addEventListener("click",function(){
+    var P=loadP(),id=curList[qi];
+    if(!bmMode&&P[id]===undefined){P[id]=-1;saveP(P);api("skip",{id:id}).catch(function(){})}
+    goNext();
+  });
+
+
+
+
+
+  function loadN(){return NM}
+  function syncNote(){var t=document.getElementById("note");t.value=loadN()[curList[qi]]||"";document.getElementById("notesaved").textContent=""}
+  var ntm=0;
+  document.getElementById("note").addEventListener("input",function(){var v=this.value,id=curList[qi];clearTimeout(ntm);document.getElementById("notesaved").textContent="…";ntm=setTimeout(function(){if(v.trim())NM[id]=v;else delete NM[id];api("note",{id:id,body:v}).then(function(r){document.getElementById("notesaved").textContent=r.ok?"✓ Saved":"Not saved"}).catch(function(){document.getElementById("notesaved").textContent="Not saved"})},600)});
+  var retryArm=false;
+  document.getElementById("retry").addEventListener("click",function(){
+    var b=this;if(bmMode)return;
+    if(!retryArm){retryArm=true;b.textContent="Tap again to clear this section";setTimeout(function(){retryArm=false;b.textContent="↺ Retry this section"},3500);return}
+    retryArm=false;b.textContent="↺ Retry this section";var P=loadP(),ids=curList.slice();curList.forEach(function(id){delete P[id];delete CORR[id]});saveP(P);api("reset",{ids:ids}).catch(function(){});qi=0;renderQ();window.scrollTo(0,0);
+  });
+  var welcomed=false;function showWelcome(){if(welcomed)return;welcomed=true;try{if(sessionStorage.getItem("ka-w"))return;sessionStorage.setItem("ka-w","1")}catch(e){}document.getElementById("welcome").hidden=false;document.getElementById("welcomeGo").focus()}
+  document.getElementById("welcomeGo").addEventListener("click",function(){document.getElementById("welcome").hidden=true});
+
+  // admin
+  var YN=["","السنة الأولى","السنة الثانية","السنة الثالثة","السنة الرابعة","السنة الخامسة","السنة السادسة","امتياز","خريج"];
+  function hb(label,val,max,suffix,low){return '<div class="hb'+(low?' low':'')+'"><span class="hl">'+label+'</span><span class="ht"><i style="width:'+(max?Math.round(val/max*100):0)+'%"></i></span><span class="hv">'+val+(suffix||"")+'</span></div>'}
+  var SUBS=[];
+  function fmt(d){try{return new Date(d).toLocaleDateString("en-GB")}catch(e){return ""}}
+  function loadAdmin(){
+    api("admin_stats").then(function(s){
+      if(!s.ok)return;var k=s.kpi;
+      document.getElementById("kpis").innerHTML=[[k.active,"مشترك مفعّل"],[k.pending,"بانتظار التفعيل"],[k.off,"ملغي أو مقفول"],[k.active7,"نشطون آخر 7 أيام"]].map(function(x){return '<div class="stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>'}).join("");
+      var ym={};s.years.forEach(function(y){ym[y.year]=y.n});var mx=Math.max.apply(null,[1].concat(s.years.map(function(y){return y.n})));
+      document.getElementById("chYear").innerHTML=[1,2,3,4,5,6,7,8].map(function(i){return hb(YN[i],ym[i]||0,mx)}).join("");
+      var wm=Math.max.apply(null,[1].concat(s.weeks.map(function(w){return w.n})));
+      document.getElementById("chWeek").innerHTML=s.weeks.length?'<div class="cols">'+s.weeks.map(function(w){return '<div class="c"><b>'+w.n+'</b><i style="height:'+Math.max(4,Math.round(w.n/wm*105))+'px"></i></div>'}).join("")+'</div><div class="colx">'+s.weeks.map(function(w){return '<span>'+w.w+'</span>'}).join("")+'</div>':'<p class="muted">لا توجد بيانات بعد.</p>';
+      document.getElementById("chWeak").innerHTML=s.weak.length?s.weak.map(function(w){return hb(esc(w.topic),w.pct,100,"٪",w.pct<60)}).join(""):'<p class="muted">لا توجد بيانات كافية بعد.</p>';
+      document.getElementById("chBm").innerHTML=s.favs.length?'<ul class="topbm">'+s.favs.map(function(t){return '<li><span class="q">'+esc(t.q)+'…</span><span class="n">'+t.n+' حفظ</span></li>'}).join("")+'</ul>':'<p class="muted">لا توجد بيانات بعد.</p>';
+    }).catch(function(){});
+    api("admin_subs").then(function(r){if(r.ok){SUBS=r.subs;renderReqs();renderSubs()}}).catch(function(){});
+  }
+  function renderReqs(){
+    var h="";SUBS.filter(function(s){return s.status==="pending"}).forEach(function(r){
+      h+='<div class="req"><div><b>'+esc(r.name)+'</b> <span class="chip w">بانتظار القرار</span><div class="yr">'+YN[+r.year]+'</div><div class="meta">'+r.phone+' · '+fmt(r.created_at)+'</div></div><div class="row"><button class="btn ok small" data-a="active" data-id="'+r.id+'">قبول</button><button class="btn no small" data-a="rejected" data-id="'+r.id+'">رفض</button></div></div>'});
+    document.getElementById("reqs").innerHTML=h||'<p class="muted" style="padding:8px 0">لا توجد طلبات.</p>';
+  }
+  function renderSubs(){
+    var q=(document.getElementById("subq").value||"").trim(),h="";
+    SUBS.filter(function(s){return s.status!=="pending"&&s.status!=="rejected"}).forEach(function(s){
+      if(q&&(s.name+s.phone).indexOf(q)<0)return;
+      var off=(s.status!=="active");
+      h+='<div class="subrow'+(off?' off':'')+'"><div><b>'+esc(s.name)+'</b><small>'+s.phone+' · '+YN[+s.year]+' · '+s.solved+' سؤال'+(off?' · '+(s.status==="locked"?'مقفول تلقائياً':'الاشتراك ملغي'):'')+'</small></div><button type="button" class="dng'+(off?' restore':'')+'" data-id="'+s.id+'" data-off="'+(off?0:1)+'">'+(off?'إعادة التفعيل':'إلغاء الاشتراك')+'</button></div>';
+    });
+    document.getElementById("subs").innerHTML=h||'<p class="muted" style="padding:8px 0">لا توجد نتائج.</p>';
+  }
+  document.getElementById("subq").addEventListener("input",renderSubs);
+  function setSt(id,st){api("admin_set",{id:id,status:st}).then(function(r){if(r.ok){SUBS.forEach(function(s){if(s.id===id)s.status=st});renderReqs();renderSubs();loadAdmin()}else showErr(r)}).catch(showErr)}
+  document.getElementById("subs").addEventListener("click",function(e){
+    var b=e.target.closest("[data-id]");if(!b)return;
+    if(b.dataset.off==="0"){setSt(b.dataset.id,"active");return}
+    if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="اضغط تاني للتأكيد";setTimeout(function(){if(b.isConnected){b.classList.remove("armed");b.textContent="إلغاء الاشتراك"}},3500);return}
+    setSt(b.dataset.id,"revoked");
+  });
+  document.getElementById("reqs").addEventListener("click",function(e){var b=e.target.closest("button[data-a]");if(!b)return;setSt(b.dataset.id,b.dataset.a)});
+  // question editor
+  var EQ=["q","c","why","pearl","link","learn","sec","lvl","topic"],EQSRC=null;
+  document.getElementById("eqload").addEventListener("click",function(){
+    var id=document.getElementById("eqid").value.trim();if(!id)return;
+    api("admin_get_q",{id:id}).then(function(r){
+      var q=r.ok?r.q:{id:id,q:"",o:["","","",""],c:0,why:"",pearl:"",link:"",learn:"",sec:1,lvl:"m",topic:"Other"};
+      EQSRC=q;EQ.forEach(function(k){document.getElementById("eq_"+k).value=q[k]==null?"":q[k]});
+      for(var i=0;i<4;i++)document.getElementById("eq_o"+i).value=q.o[i]||"";
+      document.getElementById("eqform").hidden=false;document.getElementById("eqmsg").textContent=r.ok?"":"سؤال جديد";
+    }).catch(showErr)});
+  document.getElementById("eqsave").addEventListener("click",function(){
+    var q=Object.assign({},EQSRC||{},{id:document.getElementById("eqid").value.trim()});
+    EQ.forEach(function(k){q[k]=document.getElementById("eq_"+k).value});q.c=+q.c;q.sec=+q.sec;
+    q.o=[0,1,2,3].map(function(i){return document.getElementById("eq_o"+i).value});
+    api("admin_save_q",{q:q}).then(function(r){document.getElementById("eqmsg").textContent=r.ok?"✓ تم الحفظ":"خطأ: "+r.error}).catch(showErr)});
+  // bulk import
+  document.getElementById("impfile").addEventListener("change",function(){
+    var f=this.files[0];if(!f)return;var msg=document.getElementById("impmsg"),bar=document.getElementById("impbar");
+    var rd=new FileReader();rd.onload=function(){
+      var arr;try{arr=JSON.parse(rd.result)}catch(e){msg.textContent="الملف غير صالح";return}
+      var i=0,saved=0,errs=[];
+      (function next(){
+        if(i>=arr.length){msg.textContent="تم رفع "+saved+" سؤال"+(errs.length?" · أخطاء: "+errs.slice(0,3).join(", "):"");return}
+        api("admin_import",{items:arr.slice(i,i+40),base:i}).then(function(r){
+          if(!r.ok){msg.textContent="فشل الرفع: "+r.error;return}
+          saved+=r.saved;errs=errs.concat(r.errors||[]);i+=40;bar.style.width=Math.min(100,Math.round(i/arr.length*100))+"%";msg.textContent=saved+" / "+arr.length;next();
+        }).catch(function(){msg.textContent="انقطع الاتصال. أعد المحاولة، الأسئلة المرفوعة محفوظة."});
+      })();
+    };rd.readAsText(f)});
+  // keep the session through a page refresh (same tab only)
+  var saved0="";try{saved0=sessionStorage.getItem("ka-tok")||""}catch(e){}
+  if(saved0){TOK=saved0;api("bootstrap").then(function(b){if(b.ok){applyBoot(b);go("sections")}else go("login")}).catch(function(){go("login")})}
+  else go("login");
+})();
+</script>
+

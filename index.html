@@ -332,6 +332,7 @@ a.btn{text-decoration:none}
 .dng.armed{background:#7E1018}.dng.restore{background:var(--ok)}
 .subrow.off b{text-decoration:line-through;color:var(--muted)}
 #subq{width:100%;margin:10px 0 6px;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;background:var(--surface-2);color:var(--ink)}
+[hidden]{display:none!important}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;background:#0A1D24;color:#fff;border-radius:12px;padding:12px 18px;max-width:92vw;font-size:14.5px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #toast[hidden]{display:none}
 .loading{padding:18px 22px;color:var(--muted)}
@@ -368,7 +369,7 @@ a.btn{text-decoration:none}
       <div><label for="u">رقم الموبايل</label><input id="u" inputmode="tel" autocomplete="username" dir="ltr" placeholder="01XXXXXXXXX"></div>
       <div><label for="pw">كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr" placeholder="••••••••"></div>
       <button class="btn block" type="submit">دخول</button>
-      <p class="hint">أول مرة؟ كود الدخول بيوصلك على واتساب بعد الدفع.</p><button type="button" class="btn ghost block" data-go="details">أول مرة؟ سجّل بكود الدخول</button>
+      <p class="hint">أول مرة؟ كود الدخول بيوصلك على واتساب بعد الدفع.</p><button type="button" class="btn ghost block" data-go="details">أول مرة؟ سجّل بكود الدخول</button><a class="btn ghost block" href="https://wa.me/201153372833?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%20%D8%AF%D9%83%D8%AA%D9%88%D8%B1%20%D8%AE%D8%A7%D9%84%D8%AF%D8%8C%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A3%D8%B4%D8%AA%D8%B1%D9%83%20%D9%81%D9%8A%20KA%20Medical%20Notes%20Q%20Bank" target="_blank" rel="noopener" style="text-decoration:none">عايز تشترك؟ تواصل معنا على واتساب</a>
     </form>
   </section>
 
@@ -947,13 +948,16 @@ a.btn{text-decoration:none}
     SUBS.filter(function(s){return s.status!=="pending"&&s.status!=="rejected"}).forEach(function(s){
       if(q&&(s.name+s.phone).indexOf(q)<0)return;
       var off=(s.status!=="active");
-      h+='<div class="subrow'+(off?' off':'')+'"><div><b>'+esc(s.name)+'</b><small>'+s.phone+' · '+YN[+s.year]+' · '+s.solved+' سؤال'+(off?' · '+(s.status==="locked"?'مقفول تلقائياً':'الاشتراك ملغي'):'')+'</small></div><button type="button" class="dng'+(off?' restore':'')+'" data-id="'+s.id+'" data-off="'+(off?0:1)+'">'+(off?'إعادة التفعيل':'إلغاء الاشتراك')+'</button></div>';
+      h+='<div class="subrow'+(off?' off':'')+'"><div><b>'+esc(s.name)+'</b><small>'+s.phone+' · '+YN[+s.year]+' · '+s.solved+' سؤال'+(off?' · '+(s.status==="locked"?'مقفول تلقائياً':'الاشتراك ملغي'):'')+'</small></div><div class="row"><button type="button" class="btn ghost small" data-pw="'+s.id+'">كلمة مرور جديدة</button><button type="button" class="dng'+(off?' restore':'')+'" data-id="'+s.id+'" data-off="'+(off?0:1)+'">'+(off?'إعادة التفعيل':'إلغاء الاشتراك')+'</button></div></div>';
     });
     document.getElementById("subs").innerHTML=h||'<p class="muted" style="padding:8px 0">لا توجد نتائج.</p>';
   }
   document.getElementById("subq").addEventListener("input",renderSubs);
   function setSt(id,st){api("admin_set",{id:id,status:st}).then(function(r){if(r.ok){SUBS.forEach(function(s){if(s.id===id)s.status=st});renderReqs();renderSubs();loadAdmin()}else showErr(r)}).catch(showErr)}
   document.getElementById("subs").addEventListener("click",function(e){
+    var pb=e.target.closest("[data-pw]");
+    if(pb){var np=window.prompt("اكتب كلمة المرور الجديدة للطالب (6 أحرف على الأقل). ابعتها له على واتساب.");if(!np)return;
+      api("admin_reset_pw",{id:pb.dataset.pw,password:np}).then(function(r){toast(r.ok?"تم تغيير كلمة المرور. الطالب اتفصل من كل الأجهزة.":"خطأ: "+r.error,5000)}).catch(showErr);return}
     var b=e.target.closest("[data-id]");if(!b)return;
     if(b.dataset.off==="0"){setSt(b.dataset.id,"active");return}
     if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="اضغط تاني للتأكيد";setTimeout(function(){if(b.isConnected){b.classList.remove("armed");b.textContent="إلغاء الاشتراك"}},3500);return}

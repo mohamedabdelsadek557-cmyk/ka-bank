@@ -608,7 +608,7 @@ a.btn{text-decoration:none}
   var PM={},CORR={},FAV={},NM={};
   function loadMeta(meta){
     Q.length=0;for(var k in QMAP)delete QMAP[k];
-    meta.forEach(function(m){var q={id:m[0],sec:m[1],msg:m[2],lvl:m[3],topic:m[4],spec:m[5],grp:m[6]};Q.push(q);QMAP[q.id]=q});
+    meta.forEach(function(m){var q={id:m[0],sec:m[1],msg:m[2],lvl:m[3],topic:m[4],spec:"",grp:m[5]};Q.push(q);QMAP[q.id]=q});
   }
   function applyBoot(j){
     ME=j.user;userName=ME.name;userPhone=ME.phone;buildWm();
@@ -815,7 +815,7 @@ a.btn{text-decoration:none}
     document.getElementById("qbar").style.width=Math.round(cnt/curList.length*100)+"%";
     document.getElementById("qsec").textContent=curLabel;
     var lv=document.getElementById("qlvl");lv.textContent=LV[q.lvl];lv.className="lvl "+q.lvl;
-    document.getElementById("qspec").textContent=q.spec;
+    document.getElementById("qspec").textContent=q.topic;
     syncBm();syncNote();
     document.getElementById("stem").textContent=q.q;
     document.getElementById("figwrap").hidden=!q.fig;
@@ -861,7 +861,7 @@ a.btn{text-decoration:none}
     (restore?api("review",{id:id}):api("answer",{id:id,choice:i})).then(function(r){
       if(!r.ok){answered=false;box.classList.remove("answered");for(var k=0;k<4;k++)document.getElementById("opt"+k).disabled=false;document.getElementById("skiprow").hidden=false;showErr(r);return}
       if(curList[qi]!==id)return;
-      var d=r.d;if(!restore){var P=loadP();P[id]=i;saveP(P)}CORR[id]=!!r.correct;
+      var d=r.d;document.getElementById("qspec").textContent=d.spec||q.topic;if(!restore){var P=loadP();P[id]=i;saveP(P)}CORR[id]=!!r.correct;
       var pct=r.stats&&r.stats.pct;
       q.o.forEach(function(_,k){
         var el=document.getElementById("opt"+k);
